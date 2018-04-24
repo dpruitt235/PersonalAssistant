@@ -9,24 +9,24 @@ namespace PersonalAssistant
 {
 	class RecognizeSpeech
 	{
-
+		private static string currMesg = "temp";
 		public static void RunSpeech()
 		{
 			using (SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-US")))
 			{
 
 				// Create a grammar for finding services in different cities.
-				Choices services = new Choices(new string[] { "restaurants", "hotels", "gas stations" });
-				Choices cities = new Choices(new string[] { "Seattle", "Boston", "Dallas" });
+				Choices options = new Choices(new string[] { "what will the weather be like", "play music", "what time is it" , "quit"});
 
-				GrammarBuilder findServices = new GrammarBuilder("Find");
-				findServices.Append(services);
-				findServices.Append("near");
-				findServices.Append(cities);
+				GrammarBuilder otherSearch = new GrammarBuilder("computer");
+				GrammarBuilder searchOptions = new GrammarBuilder(options);
 
 				// Create a Grammar object from the GrammarBuilder and load it to the recognizer.
-				Grammar servicesGrammar = new Grammar(findServices);
-				recognizer.LoadGrammarAsync(servicesGrammar);
+				Grammar StartingGrammer = new Grammar(otherSearch);
+				Grammar OptionsGrammer = new Grammar(searchOptions);
+
+				recognizer.LoadGrammarAsync(StartingGrammer);
+				recognizer.LoadGrammarAsync(OptionsGrammer);
 
 				// Add a handler for the speech recognized event.
 				recognizer.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(recognizer_SpeechRecognized);
@@ -37,11 +37,9 @@ namespace PersonalAssistant
 				// Start asynchronous, continuous speech recognition.
 				recognizer.RecognizeAsync(RecognizeMode.Multiple);
 
-				// Keep the console window open.
-				while (true)
-				{
-					Console.ReadLine();
-				}
+				// Waits until the message says to kill the program
+				System.Threading.SpinWait.SpinUntil(() => currMesg.Contains("quit"));
+				return;
 
 			}
 
@@ -51,6 +49,8 @@ namespace PersonalAssistant
 		static void recognizer_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
 		{
 			Console.WriteLine("Recognized text: " + e.Result.Text);
+			currMesg = MessagePass.messagePass = e.Result.Text;
+			MessagePass.messageHasBeenPassed = true; //used to wait the other thread
 		}
 	}
 }
